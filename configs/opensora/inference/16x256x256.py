@@ -9,15 +9,15 @@ model = dict(
     time_scale=1.0,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
-    from_pretrained="PRETRAINED_MODEL",
+    from_pretrained="/home/psdz/yantao/awork/Open-Sora/opensora/models/Open-Sora/OpenSora-v1-HQ-16x256x256.pth",
 )
 vae = dict(
     type="VideoAutoencoderKL",
-    from_pretrained="stabilityai/sd-vae-ft-ema",
+    from_pretrained="/home/psdz/yantao/awork/Open-Sora/opensora/models/sd-vae-ft-ema",
 )
 text_encoder = dict(
     type="t5",
-    from_pretrained="./pretrained_models/t5_ckpts",
+    from_pretrained="/home/psdz/yantao/awork/Open-Sora/opensora/models/text_encoder",
     model_max_length=120,
 )
 scheduler = dict(
