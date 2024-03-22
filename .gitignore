@@ -174,3 +174,8 @@ pretrained_models/
 
 # Secret files
 hostfile
+
+# 忽略下载的权重文件
+opensora/models/Open-Sora/
+opensora/models/sd-vae-ft-ema/
+opensora/models/text_encoder/t5-v1_1-xxl/
