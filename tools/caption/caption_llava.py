@@ -12,6 +12,17 @@ from llava.model.llava_arch import unpad_image
 from llava.utils import disable_torch_init
 from tqdm import tqdm
 
+
+from llava.eval.run_llava import image_parser, load_images
+from llava.constants import (
+    IMAGE_TOKEN_INDEX,
+    DEFAULT_IMAGE_TOKEN,
+    DEFAULT_IM_START_TOKEN,
+    DEFAULT_IM_END_TOKEN,
+    IMAGE_PLACEHOLDER,
+)   
+import re 
+
 from .utils import extract_frames, prompts, read_video_list
 
 disable_torch_init()
@@ -243,6 +254,159 @@ def prepare_inputs_labels_for_multimodal(
 
 @torch.inference_mode()
 def main(args):
+    query = prompts[args.prompt]
+    print(f"Prompt: {query}")
+    conv = conv_templates["chatml_direct"].copy()
+    conv.append_message(conv.roles[0], DEFAULT_IMAGE_TOKEN + "\n" + query)
+    prompt = conv.get_prompt()
+    print(f'##### prompt: {type(prompt)}; \n{prompt}; ??????????????????????')
+
+
+    model_path = "/home/psdz/yantao/awork/Open-Sora/hf_hub/llava-v1.6-vicuna-7b"
+    # prompt = "What are the things I should be cautious about when I visit here?"
+    # image_file = "/home/psdz/yantao/awork/Open-Sora/datas/a001.png"
+
+    # args = type('Args', (), {
+    #     "model_path": model_path,
+    #     "model_base": None,
+    #     "model_name": get_model_name_from_path(model_path),
+    #     "query": prompt,
+    #     "conv_mode": None,
+    #     "image_file": None,
+    #     "sep": ",",
+    #     "temperature": 0,
+    #     "top_p": None,
+    #     "num_beams": 1,
+    #     "max_new_tokens": 512
+    # })()
+    args.model_path = model_path
+    args.model_base = None
+    args.model_name = get_model_name_from_path(model_path)
+    args.query = prompt
+    args.conv_mode = None
+    args.image_file = None
+    args.sep = ","
+    args.temperature = 0
+    args.top_p = None
+    args.num_beams = 1
+    args.max_new_tokens = 512
+
+    # Model
+    disable_torch_init()
+
+    model_name = get_model_name_from_path(args.model_path)
+    tokenizer, model, image_processor, context_len = load_pretrained_model(
+        args.model_path, args.model_base, model_name
+    )
+
+    qs = args.query
+    conv_mode = "llava_v1"
+    args.conv_mode = conv_mode
+    # image_token_se = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
+    # if IMAGE_PLACEHOLDER in qs:
+    #     if model.config.mm_use_im_start_end:
+    #         qs = re.sub(IMAGE_PLACEHOLDER, image_token_se, qs)
+    #     else:
+    #         qs = re.sub(IMAGE_PLACEHOLDER, DEFAULT_IMAGE_TOKEN, qs)
+    # else:
+    #     if model.config.mm_use_im_start_end:
+    #         qs = image_token_se + "\n" + qs
+    #     else:
+    #         qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
+
+    # if "llama-2" in model_name.lower():
+    #     conv_mode = "llava_llama_2"
+    # elif "mistral" in model_name.lower():
+    #     conv_mode = "mistral_instruct"
+    # elif "v1.6-34b" in model_name.lower():
+    #     conv_mode = "chatml_direct"
+    # elif "v1" in model_name.lower():
+    #     conv_mode = "llava_v1"
+    # elif "mpt" in model_name.lower():
+    #     conv_mode = "mpt"
+    # else:
+    #     conv_mode = "llava_v0"
+
+    # if args.conv_mode is not None and conv_mode != args.conv_mode:
+    #     print(f'@@@@@@@@@@@@ case 1 @@@@@@@@@@@@@@@@@@@@@@@@2')
+    #     print(
+    #         "[WARNING] the auto inferred conversation mode is {}, while `--conv-mode` is {}, using {}".format(
+    #             conv_mode, args.conv_mode, args.conv_mode
+    #         )
+    #     )
+    # else:
+    #     print(f'&&&&&&&&&&&&&&&&&&&&&&&&& case 2 &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&')
+    #     args.conv_mode = conv_mode
+
+    conv = conv_templates[args.conv_mode].copy()
+    conv.append_message(conv.roles[0], qs)
+    conv.append_message(conv.roles[1], None)
+    prompt = conv.get_prompt()
+
+
+
+
+    # ======================================================
+    # 1. read video list
+    # ======================================================
+    videos = read_video_list(args.video_folder, args.output_file)
+    f = open(args.output_file, "a")
+    writer = csv.writer(f)
+    print(f'{type(videos)};\n{videos};')
+
+    # bs = args.bs
+    # for i in tqdm(range(0, len(videos), bs)):
+    #     # prepare a batch of inputs
+    #     video_files = videos[i : i + bs]
+    #     frames = []
+    #     video_lengths = []
+    #     for video_file in video_files:
+    #         frame, length = extract_frames(os.path.join(args.video_folder, video_file))
+    #         if len(frame) < 3:
+    #             continue
+    #         frames.append(frame)
+    #         video_lengths.append(length)
+    #     if len(frames) == 0:
+    #         continue
+    for video in videos:
+        video_ffn = os.path.join(args.video_folder, video)
+        frames, length = extract_frames(video_ffn)
+        # image_files = image_parser(args) # 解析args.image_file为List
+        # images = load_images(image_files) # 获取Image对象列表
+        images = frames
+        image_sizes = [x.size for x in images]
+        images_tensor = process_images(
+            images,
+            image_processor,
+            model.config
+        ).to(model.device, dtype=torch.float16)
+
+        input_ids = (
+            tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
+            .unsqueeze(0)
+            .cuda()
+        )
+
+        with torch.inference_mode():
+            output_ids = model.generate(
+                input_ids,
+                images=images_tensor,
+                image_sizes=image_sizes,
+                do_sample=True if args.temperature > 0 else False,
+                temperature=args.temperature,
+                top_p=args.top_p,
+                num_beams=args.num_beams,
+                max_new_tokens=args.max_new_tokens,
+                use_cache=True,
+            )
+
+        outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
+        print(f'### {video_ffn}, {outputs}, {length};')
+        writer.writerow((video_ffn, outputs, length))
+    f.close()
+
+
+def main_old(args):
     # ======================================================
     # 1. read video list
     # ======================================================
@@ -253,7 +417,7 @@ def main(args):
     # ======================================================
     # 2. load model and prepare prompts
     # ======================================================
-    model_path = "liuhaotian/llava-v1.6-34b"
+    model_path = '/home/psdz/yantao/awork/Open-Sora/hf_hub/llava-v1.6-vicuna-7b' # "liuhaotian/llava-v1.6-34b"
     query = prompts[args.prompt]
     print(f"Prompt: {query}")
     conv = conv_templates["chatml_direct"].copy()
@@ -321,6 +485,7 @@ def main(args):
         ]
         inputs_embeds = torch.cat(inputs_embeds, dim=0)
 
+        print(f'????? inputs_embeds: {inputs_embeds.shape};')
         # generate outputs
         output_ids = super(type(model), model).generate(
             inputs_embeds=inputs_embeds,
@@ -328,8 +493,9 @@ def main(args):
             do_sample=True,
             temperature=0.2,
             max_new_tokens=512,
-            use_cache=True,
+            use_cache=False, #True,
         )
+        print(f'输出类型：{type(output_ids)}; {output_ids.shape}; {output_ids}; ??????')
         outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
         outputs = [output.replace("\n", " ").strip() for output in outputs]
 

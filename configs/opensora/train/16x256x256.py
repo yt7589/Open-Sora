@@ -19,17 +19,17 @@ model = dict(
     type="STDiT-XL/2",
     space_scale=0.5,
     time_scale=1.0,
-    from_pretrained="PixArt-XL-2-512x512.pth",
+    from_pretrained="/home/psdz/yantao/awork/Open-Sora/opensora/models/Open-Sora/OpenSora-v1-HQ-16x256x256.pth",
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(
     type="VideoAutoencoderKL",
-    from_pretrained="stabilityai/sd-vae-ft-ema",
+    from_pretrained="/home/psdz/yantao/awork/Open-Sora/opensora/models/sd-vae-ft-ema",
 )
 text_encoder = dict(
     type="t5",
-    from_pretrained="./pretrained_models/t5_ckpts",
+    from_pretrained="/home/psdz/yantao/awork/Open-Sora/opensora/models/text_encoder",
     model_max_length=120,
     shardformer=True,
 )
@@ -48,6 +48,6 @@ log_every = 10
 ckpt_every = 1000
 load = None
 
-batch_size = 8
+batch_size = 1
 lr = 2e-5
 grad_clip = 1.0

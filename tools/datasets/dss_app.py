@@ -23,12 +23,20 @@ def get_min_json():
     print(f'########### ^_^ The End! ^_^ ##################')
 
 def get_video_url(json_fn:str) -> List[str]:
+    '''
+    获取Json文件中的视频URL列表
+    '''
     with open(json_fn, 'r', encoding='utf-8') as fd:
         data = json.load(fd)
     video_urls = []
     for k, v in data.items():
         video_urls.append(v['url'])
     return video_urls
+
+def cut_video(video_fn:str, dest_video_fn:str, seq:int, start:int, end:int) -> None:
+    '''
+    截取视频从start帧开始到end帧结束，并以dest_video_fn为文件名
+    '''
 
 def main(args:argparse.Namespace = {}) -> None:
     print(f'数据集处理程序 v0.0.1')
