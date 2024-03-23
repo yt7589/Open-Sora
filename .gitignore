@@ -179,6 +179,7 @@ hostfile
 opensora/models/Open-Sora/
 opensora/models/sd-vae-ft-ema/
 opensora/models/text_encoder/t5-v1_1-xxl/
+hf_hub/
 # 忽略数据集文件
 datas/
 # 忽略第三方库
