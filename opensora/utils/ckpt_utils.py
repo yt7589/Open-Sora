@@ -181,6 +181,18 @@ def load(
     dist.barrier()
     return running_states["epoch"], running_states["step"], running_states["sample_start_index"]
 
+def load_retrain(
+    booster: Booster, model: nn.Module, ema: nn.Module, optimizer: Optimizer, lr_scheduler: _LRScheduler, load_dir: str
+) -> None:
+    '''
+    仅载入权重并且重新开始训练
+    '''
+    booster.load_model(model, os.path.join(load_dir, "model"))
+    # ema is not boosted, so we don't use booster.load_model
+    # ema.load_state_dict(torch.load(os.path.join(load_dir, "ema.pt")))
+    ema.load_state_dict(torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu")))
+    dist.barrier()
+
 
 def create_logger(logging_dir):
     """

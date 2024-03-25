@@ -14,6 +14,9 @@ grad_checkpoint = True
 plugin = "zero2"
 sp_size = 1
 
+# 是否在已经微调完成后的模型上继续训练
+retrain = False
+
 # Define model
 model = dict(
     type="STDiT-XL/2",

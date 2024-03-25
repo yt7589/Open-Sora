@@ -20,7 +20,7 @@ from opensora.acceleration.parallel_states import (
 from opensora.acceleration.plugin import ZeroSeqParallelPlugin
 from opensora.datasets import DatasetFromCSV, get_transforms_image, get_transforms_video, prepare_dataloader
 from opensora.registry import MODELS, SCHEDULERS, build_module
-from opensora.utils.ckpt_utils import create_logger, load, model_sharding, record_model_param_shape, save
+from opensora.utils.ckpt_utils import create_logger, load, model_sharding, record_model_param_shape, save, load_retrain
 from opensora.utils.config_utils import (
     create_experiment_workspace,
     create_tensorboard_writer,
@@ -188,10 +188,14 @@ def main():
 
     # 6.1. resume training
     if cfg.load is not None:
-        logger.info("Loading checkpoint")
-        start_epoch, start_step, sampler_start_idx = load(booster, model, ema, optimizer, lr_scheduler, cfg.load)
-        logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
+        if cfg.retrain: # 重新训练训练完成的模型
+            load_retrain(booster, model, ema, optimizer, lr_scheduler, cfg.load)
+        else:
+            logger.info("Loading checkpoint")
+            start_epoch, start_step, sampler_start_idx = load(booster, model, ema, optimizer, lr_scheduler, cfg.load)
+            logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
     logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
+
 
     dataloader.sampler.set_start_index(sampler_start_idx)
     model_sharding(ema)
