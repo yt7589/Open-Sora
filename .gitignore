@@ -184,3 +184,5 @@ hf_hub/
 datas/
 # 忽略第三方库
 agents/
+weights/
+work/
