@@ -79,8 +79,8 @@ def scene_detect():
                 yyy_scene-1.mp4
     """
     # TODO: specify your dataset root
-    root_src = f"./datas/hd_vg_130m/raw_videos"
-    root_dst = f"./datas/hd_vg_130m/clips"
+    root_src = f"./datas/vrcad/videos"
+    root_dst = f"./datas/vrcad/clips"
 
     process_folder(root_src, root_dst)
 

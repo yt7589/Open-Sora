@@ -46,6 +46,7 @@ def main():
     dtype = to_torch_dtype(cfg.dtype)
     set_random_seed(seed=cfg.seed)
     prompts = load_prompts(cfg.prompt_path)
+    print(f'prompts: {type(prompts)}; \n{prompts};')
 
     # ======================================================
     # 3. build model & load weights
@@ -54,6 +55,7 @@ def main():
     input_size = (cfg.num_frames, *cfg.image_size)
     vae = build_module(cfg.vae, MODELS)
     latent_size = vae.get_latent_size(input_size)
+    print(f'latent_size: {latent_size};')
     text_encoder = build_module(cfg.text_encoder, MODELS, device=device)  # T5 must be fp32
     model = build_module(
         cfg.model,

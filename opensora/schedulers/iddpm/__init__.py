@@ -62,6 +62,8 @@ class IDDPM(SpacedDiffusion):
         n = len(prompts)
         z = torch.randn(n, *z_size, device=device)
         z = torch.cat([z, z], 0)
+        # model_args['y']: torch.Size([2, 1, 120, 4096]); 120为序列长度，4096为维度
+        # model_args['mask']: torch.Size([2, 120])
         model_args = text_encoder.encode(prompts)
         y_null = text_encoder.null(n)
         model_args["y"] = torch.cat([model_args["y"], y_null], 0)
@@ -78,7 +80,8 @@ class IDDPM(SpacedDiffusion):
             progress=True,
             device=device,
         )
-        samples, _ = samples.chunk(2, dim=0)
+        # 在配置文件中定义：batch_size=2, latent_size: [16, 32, 32]
+        samples, _ = samples.chunk(2, dim=0) # samples: torch.Size([2, 4, 16, 32, 32])
         return samples
 
 

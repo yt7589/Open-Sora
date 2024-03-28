@@ -30,5 +30,5 @@ dtype = "fp16"
 # Others
 batch_size = 2
 seed = 42
-prompt_path = "./assets/texts/t2v_samples.txt"
-save_dir = "./outputs/samples/"
+prompt_path = "./assets/texts/vrcad_baseline.txt"
+save_dir = "./outputs/vrcad_fpft/"
