@@ -1,6 +1,7 @@
 # Long Video Generation：长视频生成
 import argparse
 from apps.lvg.vae_ds import VaeDs
+from torch.utils.data import DataLoader 
 
 class LvgApp(object):
     def __init__(self):
@@ -17,7 +18,13 @@ class LvgApp(object):
         # VaeDs.check_video(video_fn = "datas/vrcad/tvs/a_2.mp4")
         video_fn1 = 'datas/vrcad/tvs/a_00000003.mp4'
         frame_cnt = 16
-        VaeDs.extract_frames_per_n(video_fn=video_fn1, frame_cnt=frame_cnt)
+        # VaeDs.extract_frames_per_n(video_fn=video_fn1, frame_cnt=frame_cnt)
+        video_folder = 'datas/vrcad/t001'
+        ds = VaeDs(video_folder=video_folder)
+        # implementing dataloader on the dataset and printing per batch 
+        dataloader = DataLoader(ds, batch_size=2, shuffle=True) 
+        for i, batch in enumerate(dataloader): 
+            print(f'{i}: {type(batch)}; \n{batch.shape};') 
 
 
 def main(args:argparse.Namespace = {}) -> None:

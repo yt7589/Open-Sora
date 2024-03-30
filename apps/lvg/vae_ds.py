@@ -1,21 +1,59 @@
 # 视频变分自动编码机数据集类
+import os
 import math
 from typing import List, Any
 import cv2
 from PIL import ImageFont, ImageDraw, Image
 import numpy as np
+import torch
 from torch.utils.data import Dataset
+import torchvision.transforms as transforms
 
 class VaeDs(Dataset):
-    def __init__(self):
+    def __init__(self, video_folder:str):
         self.name = ''
+        self.items = []
+        self._add_videos(video_folder=video_folder, items=self.items)
 
     def __len__(self):
-        return 0
+        return len(self.items)
     
     def __getitem__(self, index):
-        return None
+        return self.items[index]
     
+    def _add_videos(self, video_folder:str, items:List) -> None:
+        for root, dirs, files in os.walk(video_folder):
+            for fn in files:
+                video_fn = f'{root}/{fn}'
+                self._process_video(video_fn=video_fn, items=items)
+            # 递归处理目录
+            for dd in dirs:
+                self._add_videos(dd, items)
+    
+    def _process_video(self, video_fn:str, items:List) -> None:
+        img_trans = transforms.ToTensor()
+        # Open the video file
+        cap = cv2.VideoCapture(video_fn)
+        # Get the frames per second
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        duration = 2
+        frame_cnt = 16
+        n = math.ceil(fps * duration / frame_cnt) # every n-th frame
+        count = 0
+        frames = None
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            count += 1
+            frame = img_trans(frame).unsqueeze(0)
+            if (count-1) % n == 0:
+                if frames is None:
+                    frames = frame
+                else:
+                    frames = torch.vstack((frames, frame))
+        frames = torch.transpose(frames, 0, 1)
+        items.append(frames)
     
     @staticmethod
     def segment_video(video_fn:str, out_fn_base:str) ->None:
